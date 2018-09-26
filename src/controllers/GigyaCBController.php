@@ -36,7 +36,7 @@ class GigyaCBController extends CBController {
 		$this->gigya_user_key = config('crudbooster.GIGYAUSERKEY');
 	}
 
-	private function getCustomer($offset=0,$limit=300000)
+	private function getCustomer($offset=0,$limit=50)
     {
 
     	$method = "accounts.search";
@@ -89,60 +89,57 @@ class GigyaCBController extends CBController {
 		$table_columns = CB::getTableColumns($this->table);
 		$result = DB::table($this->table)->select(DB::raw($this->primary_key));
 
+		$tempTable = $this->createTempTable();
+
+
+		if ($tempTable) {
+		//insert table
+
+		$gigyaData = $this->getCustomer();
+
+		// dd($gigyaData);
+
+		$gigyaResults = $gigyaData['results'];
+		$totalCount = $gigyaData['totalCount'];
+		//echo $totalCount."<br>";
+		//echo "<pre>".print_r($gigyaResults,TRUE)."</pre><br>";
 		$tableName = 'customergigya';
+		DB::table($tableName)->truncate();
 
-
-		if (!Request::get('page')) {
-			//insert table
-			//$tempTable = $this->createTempTable();
-			$gigyaData = $this->getCustomer();
-
-			// dd($gigyaData);
-
-			$gigyaResults = $gigyaData['results'];
-			$totalCount = $gigyaData['totalCount'];
-			$fdataArray = range(0,$totalCount);
-			print_r($fdataArray);
-			//echo $totalCount."<br>";
-			//echo "<pre>".print_r($gigyaResults,TRUE)."</pre><br>";
+		foreach ($gigyaResults as $gigyaResult) {
 			
-			DB::table($tableName)->truncate();
+			// $profile[] = $gigyaResult['profile'];
+			$i = 0;
+			$col = array_keys($gigyaResult['profile']);
+			$colLength = sizeof($col);
+			// $childData[] = $gigyaResult['data']['child'];
+			// dump($profile);
 
-			foreach ($gigyaResults as $gigyaResult) {
-				
-				// $profile[] = $gigyaResult['profile'];
-				$i = 0;
-				$col = array_keys($gigyaResult['profile']);
-				$colLength = sizeof($col);
-				// $childData[] = $gigyaResult['data']['child'];
-				// dump($profile);
+			$listOfColumn = DB::select(DB::raw("SHOW COLUMNS in $tableName"));
 
-				$listOfColumn = DB::select(DB::raw("SHOW COLUMNS in $tableName"));
+			for ($a=0; $a < $colLength; $a++) { 
 
-				for ($a=0; $a < $colLength; $a++) { 
-
-				    $colName = $col[$a];
-				    // dd($colName);
-				    $profile[$i][$colName] = $gigyaResult['profile'][$colName];
-				    // dump($profile[$i][$colName]);
-				    foreach ($listOfColumn as $listOfCol) {
-				        $listCol[] = $listOfCol->Field;
-				        
-				    }
-				    // dump($colName,$listCol);
-				    if(!in_array($colName, $listCol)){
-				        // dump($colName,'not exist');/
-				        DB::insert(DB::raw("ALTER TABLE $tableName ADD COLUMN $colName varchar(255) NOT NULL"));
-				    }
-				}
-				    
-
-			    DB::table($tableName)->insert([
-			        $profile[0]
-			    ]);
-				// dump($profile);
-			    $i++;
+			    $colName = $col[$a];
+			    // dd($colName);
+			    $profile[$i][$colName] = $gigyaResult['profile'][$colName];
+			    // dump($profile[$i][$colName]);
+			    foreach ($listOfColumn as $listOfCol) {
+			        $listCol[] = $listOfCol->Field;
+			        
+			    }
+			    // dump($colName,$listCol);
+			    if(!in_array($colName, $listCol)){
+			        // dump($colName,'not exist');/
+			        DB::insert(DB::raw("ALTER TABLE $tableName ADD COLUMN $colName varchar(255) NOT NULL"));
+			    }
 			}
+			    
+
+		    DB::table($tableName)->insert([
+		        $profile[0]
+		    ]);
+			// dump($profile);
+		    $i++;
 		}
 		$customerData = DB::table($tableName)->get();
 
@@ -342,8 +339,6 @@ class GigyaCBController extends CBController {
 			}
 		}
 
-		echo "<pre>".print_r($data['result'])."</pre>";
-
 		$data['columns'] = $columns_table;
 
 		if($this->index_return) return $data;
@@ -474,21 +469,21 @@ class GigyaCBController extends CBController {
 
 		$data['html_contents'] = $html_contents;
 		//$data['limit'] = $result->count();
-		//$data['limit'] = $totalCount;
+		$data['limit'] = $totalCount;
 		/*$itemSql = $result->toSql();
 		$itemSql = str_replace("offset","start",$itemSql);
 		echo $itemSql."<br>";*/
 
 
 		return view("crudbooster::default.index",$data);
-	
+	}
 	} //last
 
 	public function createTempTable()
 	{
 		$tableName = 'customergigya';
 		
-		$table = DB::insert(DB::raw("create table $tableName (
+		$table = DB::insert(DB::raw("create temporary table $tableName (
                                         id int NOT NULL AUTO_INCREMENT,
                                         firstName varchar(255) NOT NULL,
                                         lastName varchar(255) NOT NULL,
