@@ -100,7 +100,9 @@ class GigyaCBController extends CBController {
 		// dd($gigyaData);
 
 		$gigyaResults = $gigyaData['results'];
-		echo "<pre>".print_r($gigyaResults,TRUE)."</pre><br>";
+		$totalCount = $gigyaData['totalCount'];
+		//echo $totalCount."<br>";
+		//echo "<pre>".print_r($gigyaResults,TRUE)."</pre><br>";
 		$tableName = 'customergigya';
 		DB::table($tableName)->truncate();
 
@@ -466,7 +468,8 @@ class GigyaCBController extends CBController {
  		$html_contents = ['html'=>$html_contents,'data'=>$data['result']];
 
 		$data['html_contents'] = $html_contents;
-		$data['limit'] = $result->count();
+		//$data['limit'] = $result->count();
+		$data['limit'] = $totalCount;
 		/*$itemSql = $result->toSql();
 		$itemSql = str_replace("offset","start",$itemSql);
 		echo $itemSql."<br>";*/
