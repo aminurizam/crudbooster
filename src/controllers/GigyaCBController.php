@@ -36,7 +36,7 @@ class GigyaCBController extends CBController {
 		$this->gigya_user_key = config('crudbooster.GIGYAUSERKEY');
 	}
 
-	private function getCustomer($offset=0,$limit=50)
+	private function getCustomer($offset=0,$limit=52)
     {
 
     	$method = "accounts.search";
@@ -88,6 +88,7 @@ class GigyaCBController extends CBController {
 		$tablePK = $data['table_pk'];
 		$table_columns = CB::getTableColumns($this->table);
 		$result = DB::table($this->table)->select(DB::raw($this->primary_key));
+
 
 		$tempTable = $this->createTempTable();
 
@@ -470,6 +471,9 @@ class GigyaCBController extends CBController {
 		$data['html_contents'] = $html_contents;
 		//$data['limit'] = $result->count();
 		$data['limit'] = $totalCount;
+		$data['currentpage'] = 0;
+		$data['limitpage'] = ceil($totalCount/50);
+		$data['isgigya'] = true;
 		/*$itemSql = $result->toSql();
 		$itemSql = str_replace("offset","start",$itemSql);
 		echo $itemSql."<br>";*/

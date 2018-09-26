@@ -179,7 +179,11 @@
 
                   </form><!--END FORM TABLE-->
 
-            <p>{!! urldecode(str_replace("/?","?",$result->appends(Request::all())->render())) !!}</p>
+            @if($isgigya!=true)                              
+              <p>{!! urldecode(str_replace("/?","?",$result->appends(Request::all())->render())) !!}</p>           
+            @else
+              <p> prev {{$currentpage}}/{{$limitpage}} next </p>
+            @endif
 
 
 
