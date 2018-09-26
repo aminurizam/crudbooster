@@ -36,7 +36,7 @@ class GigyaCBController extends CBController {
 		$this->gigya_user_key = config('crudbooster.GIGYAUSERKEY');
 	}
 
-	private function getCustomer($offset=0,$limit=52)
+	private function getCustomer($offset=0,$limit=50)
     {
 
     	$method = "accounts.search";
@@ -89,6 +89,12 @@ class GigyaCBController extends CBController {
 		$table_columns = CB::getTableColumns($this->table);
 		$result = DB::table($this->table)->select(DB::raw($this->primary_key));
 
+		$page = (Request::get('page'))?Request::get('page'):1; 
+		$number = ($page-1)*$limit+1; 
+
+		$pg = (Request::get('pg'))?Request::get('pg'):1; 
+		
+
 
 		$tempTable = $this->createTempTable();
 
@@ -96,7 +102,16 @@ class GigyaCBController extends CBController {
 		if ($tempTable) {
 		//insert table
 
-		$gigyaData = $this->getCustomer();
+		if ($pg>1)
+		{
+			$gigyaData = $this->getCustomer(($pg-1)*50+1,50);
+			echo (($pg-1)*50+1)."<br>";
+			echo (($pg)*50)."<br>";
+		}
+		else			
+		{
+			$gigyaData = $this->getCustomer();
+		}
 
 		// dd($gigyaData);
 
@@ -364,8 +379,7 @@ class GigyaCBController extends CBController {
 		$orig_mainpath = $this->data['mainpath'];
 		$title_field   = $this->title_field;
 		$html_contents = array();
-		$page = (Request::get('page'))?Request::get('page'):1; 
-		$number = ($page-1)*$limit+1; 
+		
 		foreach($data['result'] as $row) {
 			$html_content = array();
 
@@ -470,9 +484,9 @@ class GigyaCBController extends CBController {
 
 		$data['html_contents'] = $html_contents;
 		//$data['limit'] = $result->count();
-		$data['limit'] = $totalCount;
-		$data['currentpage'] = 0;
+		$data['limit'] = $totalCount;		
 		$data['limitpage'] = ceil($totalCount/50);
+		$data['currentpage'] = ($pg>$data['limitpage']?$data['limitpage']:($pg<0?0:$pg));		
 		$data['isgigya'] = true;
 		/*$itemSql = $result->toSql();
 		$itemSql = str_replace("offset","start",$itemSql);
