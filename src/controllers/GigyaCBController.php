@@ -506,6 +506,7 @@ class GigyaCBController extends CBController {
                                         firstName varchar(255) NOT NULL,
                                         lastName varchar(255) NOT NULL,
                                         email varchar(255) NOT NULL,
+                                        city varchar(255) NOT NULL,
                                         PRIMARY KEY (id)
                                     )"));
 
