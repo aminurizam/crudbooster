@@ -105,8 +105,8 @@ class GigyaCBController extends CBController {
 		if ($pg>1)
 		{
 			$gigyaData = $this->getCustomer(($pg-1)*50+1,50);
-			echo (($pg-1)*50+1)."<br>";
-			echo (($pg)*50)."<br>";
+			/*echo (($pg-1)*50+1)."<br>";
+			echo (($pg)*50)."<br>";*/
 		}
 		else			
 		{
