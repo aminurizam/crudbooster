@@ -182,7 +182,15 @@
             @if($isgigya!=true)                              
               <p>{!! urldecode(str_replace("/?","?",$result->appends(Request::all())->render())) !!}</p>           
             @else
-              <p> prev {{$currentpage}}/{{$limitpage}} next </p>
+              <p> 
+              @if($currentpage>1)
+                <a href="Request::fullUrlWithQuery(['pg' => $currentpage-1]">prev</a>
+              @endif 
+              {{$currentpage}}/{{$limitpage}} 
+              @if($currentpage<$limitpage)
+                <a href="Request::fullUrlWithQuery(['pg' => $currentpage+1]">next</a>
+              @endif
+              </p>
             @endif
 
 
