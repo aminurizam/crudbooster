@@ -184,11 +184,11 @@
             @else
               <p> 
               @if($currentpage>1)
-                <a href="Request::fullUrlWithQuery(['pg' => $currentpage-1]">prev</a>
+                <a href="{!!Request::fullUrlWithQuery(['pg' => $currentpage-1])!!}">prev</a>
               @endif 
               {{$currentpage}}/{{$limitpage}} 
               @if($currentpage<$limitpage)
-                <a href="Request::fullUrlWithQuery(['pg' => $currentpage+1]">next</a>
+                <a href="{!!Request::fullUrlWithQuery(['pg' => $currentpage+1])!!}">next</a>
               @endif
               </p>
             @endif
