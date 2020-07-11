@@ -250,6 +250,17 @@ class CBController extends Controller {
 		return $columns_table;
 	}
 
+	public function generateSubqueryField(&$columns_table, &$result,$index)
+	{
+		$field = substr($field, strpos($field, ' as ')+4);
+		$result->addselect(DB::raw($coltab['name']));
+		$columns_table[$index]['type_data']   = 'varchar';
+		$columns_table[$index]['field']       = $field;
+		$columns_table[$index]['field_raw']   = $field;
+		$columns_table[$index]['field_with']  = $field;
+		$columns_table[$index]['is_subquery'] = true;		
+	}
+
 	public function processColumnsQuery(&$columns_table, &$result)
 	{
 		$table            = $this->table;
@@ -264,13 +275,7 @@ class CBController extends Controller {
 			if(!$field) die('Please make sure there is key `name` in each row of col');
 
 			if(strpos($field, ' as ')!==FALSE) {
-				$field = substr($field, strpos($field, ' as ')+4);
-				$result->addselect(DB::raw($coltab['name']));
-				$columns_table[$index]['type_data']   = 'varchar';
-				$columns_table[$index]['field']       = $field;
-				$columns_table[$index]['field_raw']   = $field;
-				$columns_table[$index]['field_with']  = $field;
-				$columns_table[$index]['is_subquery'] = true;
+				$this->generateSubqueryField($columns_table,$result,$index);				
 				continue;
 			}
 
