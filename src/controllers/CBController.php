@@ -222,40 +222,18 @@ class CBController extends Controller {
 		return $data;
 	}
 
-	public function getIndex() {
-		$this->cbLoader();
-		$this->checkAccess();		
-
-		$data = $this->processParents();
-
-		$data['table'] 	  = $this->table;
-		$data['table_pk'] = CB::pk($this->table);
-		$data['page_title']       = $module->name;
-		$data['page_description'] = trans('crudbooster.default_module_description');
-		$data['date_candidate']   = $this->date_candidate;
-		$data['limit'] = $limit   = (Request::get('limit'))?Request::get('limit'):$this->limit;
-
-		$tablePK = $data['table_pk'];
-		$table_columns = CB::getTableColumns($this->table);
+	public function generateQuery()
+	{
 		$result = DB::table($this->table)->select(DB::raw($this->table.".".$this->primary_key));
 		if(Request::get('parent_id')) {
 			$table_parent = $this->table;
 			$table_parent = CRUDBooster::parseSqlTable($table_parent)['table'];
 			$result->where($table_parent.'.'.Request::get('foreign_key'),Request::get('parent_id'));
 		}
+	}
 
-		$this->hook_query_index($result);
-
-		if(in_array('deleted_at', $table_columns)) {
-			$result->where($this->table.'.deleted_at',NULL);
-		}
-
-		$alias            = array();
-		$join_alias_count = 0;
-		$join_table_temp  = array();
-		$table            = $this->table;
-		$columns_table    = $this->columns_table;
-
+	public function checkParentsColumnsAndMerge($columns_table)
+	{
 		if(Request::get('parent_columns'))
 		{
 			$parentColumns = explode(",",Request::get('parent_columns'));
@@ -269,7 +247,13 @@ class CBController extends Controller {
 		}
 
 		$columns_table = array_merge($columns_table);
+		return $columns_table;
+	}
 
+	public function processColumnsQuery(&$columns_table, &$result)
+	{
+		$table            = $this->table;
+		$join_alias_count = 0;
 		foreach($columns_table as $index => $coltab) {
 			$join = @$coltab['join'];
 			$join_where = @$coltab['join_where'];
@@ -386,6 +370,42 @@ class CBController extends Controller {
 
 			}
 		}
+	}
+
+	public function getIndex() {
+		$this->cbLoader();
+		$this->checkAccess();		
+
+		$data = $this->processParents();
+
+		$data['table'] 	  = $this->table;
+		$data['table_pk'] = CB::pk($this->table);
+		$data['page_title']       = $module->name;
+		$data['page_description'] = trans('crudbooster.default_module_description');
+		$data['date_candidate']   = $this->date_candidate;
+		$data['limit'] = $limit   = (Request::get('limit'))?Request::get('limit'):$this->limit;
+
+		$tablePK = $data['table_pk'];
+		$table_columns = CB::getTableColumns($this->table);
+		$result  = $this->generateQuery();		
+
+		$this->hook_query_index($result);
+
+		if(in_array('deleted_at', $table_columns)) {
+			$result->where($this->table.'.deleted_at',NULL);
+		}
+
+		$alias            = array();
+		$join_alias_count = 0;
+		$join_table_temp  = array();
+		$table            = $this->table;
+		$columns_table    = $this->columns_table;
+
+		$columns_table = $this->checkParentsColumnsAndMerge($columns_table);
+		
+		$this->processColumnsQuery($columns_table,$result);
+
+		
 
 		if(Request::get('q')) {
 			$result->where(function($w) use ($columns_table, $request) {
