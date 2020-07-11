@@ -404,9 +404,7 @@ class CBController extends Controller {
 		$columns_table = $this->checkParentsColumnsAndMerge($columns_table);
 		
 		$this->processColumnsQuery($columns_table,$result);
-
 		
-
 		if(Request::get('q')) {
 			$result->where(function($w) use ($columns_table, $request) {
 				foreach($columns_table as $col) {
