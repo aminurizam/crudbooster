@@ -377,54 +377,10 @@ class CBController extends Controller {
 		}
 	}
 
-	public function getIndex() {
-		$this->cbLoader();
-		$this->checkAccess();		
-
-		$data = $this->processParents();
-
-		$data['table'] 	  = $this->table;
-		$data['table_pk'] = CB::pk($this->table);
-		$data['page_title']       = $module->name;
-		$data['page_description'] = trans('crudbooster.default_module_description');
-		$data['date_candidate']   = $this->date_candidate;
-		$data['limit'] = $limit   = (Request::get('limit'))?Request::get('limit'):$this->limit;
-
-		$tablePK = $data['table_pk'];
-		$table_columns = CB::getTableColumns($this->table);
-		$result  = $this->generateQuery();		
-
-		$this->hook_query_index($result);
-
-		if(in_array('deleted_at', $table_columns)) {
-			$result->where($this->table.'.deleted_at',NULL);
-		}
-
-		$alias            = array();
-		$join_alias_count = 0;
-		$join_table_temp  = array();
+	public function processFilterColumns(&$columns_table, &$result,&$data)
+	{
 		$table            = $this->table;
-		$columns_table    = $this->columns_table;
-
-		$columns_table = $this->checkParentsColumnsAndMerge($columns_table);
-		
-		$this->processColumnsQuery($columns_table,$result);
-		
-		if(Request::get('q')) {
-			$result->where(function($w) use ($columns_table, $request) {
-				foreach($columns_table as $col) {
-						if(!$col['field_with']) continue;
-						if($col['is_subquery']) continue;
-						$w->orwhere($col['field_with'],"like","%".Request::get("q")."%");
-				}
-			});
-		}
-
-		if(Request::get('where')) {
-			foreach(Request::get('where') as $k=>$v) {
-				$result->where($table.'.'.$k,$v);
-			}
-		}
+		$limit			  = $data["limit"];
 
 		$filter_is_orderby = false;
 		if(Request::get('filter_column')) {
@@ -441,16 +397,13 @@ class CBController extends Controller {
 							{
 								if (strpos($c['name'], " as ") !== false) {
 										$key = "(".substr($c['name'], 0, strpos($c['name'], " as ")).")";
-										$icheck = true;
-										//dd($key);
+										$icheck = true;										
 										break;
 								}
 							}
 						}
 					}
-
-
-					// dd($fc);
+					
 					$value = @$fc['value'];
 					$type  = @$fc['type'];
 
@@ -589,10 +542,44 @@ class CBController extends Controller {
 		}
 
 		$data['columns'] = $columns_table;
+	}
 
-		if($this->index_return) return $data;
+	public function initDataValues()
+	{
+		$data['table'] 	  = $this->table;
+		$data['table_pk'] = CB::pk($this->table);
+		$data['page_title']       = $module->name;
+		$data['page_description'] = trans('crudbooster.default_module_description');
+		$data['date_candidate']   = $this->date_candidate;
+		$data['limit'] = $limit   = (Request::get('limit'))?Request::get('limit'):$this->limit;
+		return $data;
+	}
 
-		//LISTING INDEX HTML
+	public function processSearchQuery(&$columns_table,&$result)
+	{
+		if(Request::get('q')) {
+			$result->where(function($w) use ($columns_table, $request) {
+				foreach($columns_table as $col) {
+						if(!$col['field_with']) continue;
+						if($col['is_subquery']) continue;
+						$w->orwhere($col['field_with'],"like","%".Request::get("q")."%");
+				}
+			});
+		}
+	}
+
+	public function processWhereQuery(&$columns_table,&$result)
+	{
+		$table 	  = $this->table;
+		if(Request::get('where')) {
+			foreach(Request::get('where') as $k=>$v) {
+				$result->where($table.'.'.$k,$v);
+			}
+		}
+	}
+
+	public function processCustomActions()
+	{
 		$addaction     = $this->data['addaction'];
 
 		if($this->sub_module) {
@@ -607,6 +594,45 @@ class CBController extends Controller {
 				];
 			}
 		}
+
+		return $addaction;
+		
+	}
+
+	public function getIndex() {
+		$this->cbLoader();
+		$this->checkAccess();		
+
+		$data = $this->processParents();
+		$data = $this->initDataValues();
+	
+		$tablePK = $data['table_pk'];
+		$table_columns = CB::getTableColumns($this->table);
+		$result  = $this->generateQuery();		
+
+		$this->hook_query_index($result);
+
+		if(in_array('deleted_at', $table_columns)) {
+			$result->where($this->table.'.deleted_at',NULL);
+		}
+
+		$alias            = array();
+		$join_alias_count = 0;
+		$join_table_temp  = array();
+		$table            = $this->table;
+		$columns_table    = $this->columns_table;
+
+		$columns_table = $this->checkParentsColumnsAndMerge($columns_table);
+		
+		$this->processColumnsQuery($columns_table,$result);
+		$this->processSearchQuery($columns_table,$result);
+		$this->processWhereQuery($columns_table,$result);				
+		$this->processFilterColumns($columns_table,$result,$data);		
+
+		if($this->index_return) return $data;
+
+		//LISTING INDEX HTML
+		$addaction = $this->processCustomActions();		
 
 		$mainpath      = CRUDBooster::mainpath();
 		$orig_mainpath = $this->data['mainpath'];
