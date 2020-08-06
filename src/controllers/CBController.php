@@ -230,6 +230,7 @@ class CBController extends Controller {
 			$table_parent = CRUDBooster::parseSqlTable($table_parent)['table'];
 			$result->where($table_parent.'.'.Request::get('foreign_key'),Request::get('parent_id'));
 		}
+		return $result;
 	}
 
 	public function checkParentsColumnsAndMerge($columns_table)
@@ -250,7 +251,7 @@ class CBController extends Controller {
 		return $columns_table;
 	}
 
-	public function generateSubqueryField(&$columns_table, &$result,$index)
+	public function generateSubqueryField($coltab,&$columns_table, &$result,$index)
 	{
 		$field = substr($field, strpos($field, ' as ')+4);
 		$result->addselect(DB::raw($coltab['name']));
@@ -274,14 +275,14 @@ class CBController extends Controller {
 
 			if(!$field) die('Please make sure there is key `name` in each row of col');
 
-			if(strpos($field, ' as ')!==FALSE) {
-				$this->generateSubqueryField($columns_table,$result,$index);				
+			if(strpos($field, ' as ')!==FALSE) {				
+				$this->generateSubqueryField($coltab, $columns_table,$result,$index);								
 				continue;
 			}
 
 			else if(strpos($field,'.')!==FALSE) {
 				$result->addselect($field);
-			}else{
+			}else{				
 				$result->addselect($table.'.'.$field);
 			}
 
@@ -380,11 +381,10 @@ class CBController extends Controller {
 	public function processFilterColumns(&$columns_table, &$result,&$data)
 	{
 		$table            = $this->table;
-		$limit			  = $data["limit"];
+		$limit			  = $data["limit"];		
 
 		$filter_is_orderby = false;
-		if(Request::get('filter_column')) {
-
+		if(Request::get('filter_column')) {			
 			$filter_column = Request::get('filter_column');
 			$result->where(function($w) use ($columns_table,$filter_column,$fc) {
 				foreach($filter_column as $key=>$fc) {
@@ -449,6 +449,8 @@ class CBController extends Controller {
 				}
 			});
 
+			
+
 			foreach($filter_column as $key=>$fc) {
 				$value = @$fc['value'];
 				$type  = @$fc['type'];
@@ -499,14 +501,14 @@ class CBController extends Controller {
 					continue;
 				}
 			}
-		}
+		}		
 
 		if($filter_is_orderby == true) {
 			$data['result']  = $result->paginate($limit);
 
 		}else{
 			if($this->orderby) {
-				if(is_array($this->orderby)) {
+				if(is_array($this->orderby)) {					
 					foreach($this->orderby as $k=>$v) {
 						if(strpos($k, '.')!==FALSE) {
 							$orderby_table = explode(".",$k)[0];
@@ -516,6 +518,7 @@ class CBController extends Controller {
 						$result->orderby($orderby_table.'.'.$k,$v);
 					}
 				}else{
+					//dd($this->orderby);
 					$this->orderby = explode(";",$this->orderby);
 					foreach($this->orderby as $o) {
 						$o = explode(",",$o);
@@ -523,7 +526,9 @@ class CBController extends Controller {
 						$v = $o[1];
 						if(strpos($k, '.')!==FALSE) {
 							$orderby_table = explode(".",$k)[0];
-							$orderby_field = explode(".",$k)[1];
+							$orderby_field = explode(".",$k)[1];							
+							if ($orderby_table=="")
+								$orderby_table = $this->table;							
 							$result->orderby($orderby_table.'.'.$orderby_field,$v);
 						}else{
 							$orderby_table = $this->table;
@@ -532,6 +537,7 @@ class CBController extends Controller {
 
 					}
 				}
+				//dd($result);
 
 				$data['result'] = $result->paginate($limit);
 			}else{
@@ -608,7 +614,9 @@ class CBController extends Controller {
 	
 		$tablePK = $data['table_pk'];
 		$table_columns = CB::getTableColumns($this->table);
-		$result  = $this->generateQuery();		
+		$result  = $this->generateQuery();	
+		
+		//dd($result);
 
 		$this->hook_query_index($result);
 
@@ -622,9 +630,8 @@ class CBController extends Controller {
 		$table            = $this->table;
 		$columns_table    = $this->columns_table;
 
-		$columns_table = $this->checkParentsColumnsAndMerge($columns_table);
-		
-		$this->processColumnsQuery($columns_table,$result);
+		$columns_table = $this->checkParentsColumnsAndMerge($columns_table);				
+		$this->processColumnsQuery($columns_table,$result);		
 		$this->processSearchQuery($columns_table,$result);
 		$this->processWhereQuery($columns_table,$result);				
 		$this->processFilterColumns($columns_table,$result,$data);		
